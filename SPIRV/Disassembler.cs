@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Linq;
@@ -66,7 +66,7 @@ namespace SpirV
 				if (line.StartsWith (";")) {
 					sb.AppendLine (line);
 				} else {
-					if (line.Contains ('=')) {
+					if (line.Contains ("=")) {
 						var parts = line.Split ('=');
 						System.Diagnostics.Debug.Assert (parts.Length == 2);
 						sb.Append (parts[0].PadLeft (longestPrefix));

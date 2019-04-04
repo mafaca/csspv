@@ -69,7 +69,8 @@ namespace SpirV
 			}
 
 			var decoder = new UTF8Encoding ();
-			value = decoder.GetString (bytes.ToArray ());
+			var byteArray = bytes.ToArray ();
+			value = decoder.GetString (byteArray, 0, byteArray.Length);
 
 			return true;
 		}
@@ -128,7 +129,7 @@ namespace SpirV
 		{
 			var wordsUsedForParameters = 0;
 
-			if (typeof(T).GetCustomAttributes<FlagsAttribute> ().Any ()) {
+			if (typeof(T).GetTypeInfo().GetCustomAttributes<FlagsAttribute> ().Any ()) {
 				var result = new Dictionary<uint, List<object>> ();
 				foreach (var enumValue in EnumerationType.GetEnumValues()) {
 					var bit = (uint)enumValue;
