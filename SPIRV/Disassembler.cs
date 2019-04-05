@@ -33,28 +33,26 @@ namespace SpirV
 
 		public string Disassemble (Module module, DisassemblyOptions options)
 		{
-			StringBuilder sb = new StringBuilder ();
-
-			sb.AppendFormat ("; SPIR-V\n");
-			sb.AppendFormat ("; Version: {0}\n", module.Header.Version);
+			m_sb.AppendFormat ("; SPIR-V\n");
+			m_sb.AppendFormat ("; Version: {0}\n", module.Header.Version);
 			if (module.Header.GeneratorName == null) {
-				sb.AppendFormat ("; Generator: {0}; {1}\n",
+				m_sb.AppendFormat ("; Generator: {0}; {1}\n",
 					module.Header.GeneratorName,
 					module.Header.GeneratorVersion);
 			} else {
-				sb.AppendFormat ("; Generator: {0} {1}; {2}\n",
+				m_sb.AppendFormat ("; Generator: {0} {1}; {2}\n",
 					module.Header.GeneratorVendor,
 					module.Header.GeneratorName,
 					module.Header.GeneratorVersion);
 			}
-			sb.AppendFormat ("; Bound: {0}\n", module.Header.Bound);
-			sb.AppendFormat ("; Schema: {0}\n", module.Header.Reserved);
+			m_sb.AppendFormat ("; Bound: {0}\n", module.Header.Bound);
+			m_sb.AppendFormat ("; Schema: {0}\n", module.Header.Reserved);
 
 			List<string> lines = new List<string> ();
 			foreach (var i in module.Instructions) {
-				PrintInstruction (sb, i, options);
-				lines.Add (sb.ToString ());
-				sb.Clear ();
+				PrintInstruction (m_sb, i, options);
+				lines.Add (m_sb.ToString ());
+				m_sb.Clear ();
 			}
 
 			int longestPrefix = 0;
@@ -64,24 +62,26 @@ namespace SpirV
 
 			foreach (var line in lines) {
 				if (line.StartsWith (";")) {
-					sb.AppendLine (line);
+					m_sb.AppendLine (line);
 				} else {
 					if (line.Contains ("=")) {
 						var parts = line.Split ('=');
 						System.Diagnostics.Debug.Assert (parts.Length == 2);
-						sb.Append (parts[0].PadLeft (longestPrefix));
-						sb.Append (" = ");
-						sb.Append (parts[1]);
+						m_sb.Append (parts[0].PadLeft (longestPrefix));
+						m_sb.Append (" = ");
+						m_sb.Append (parts[1]);
 					} else {
-						sb.Append ("".PadLeft (longestPrefix + 4));
-						sb.Append (line);
+						m_sb.Append ("".PadLeft (longestPrefix + 4));
+						m_sb.Append (line);
 					}
 
-					sb.AppendLine ();
+					m_sb.AppendLine ();
 				}
 			}
 
-			return sb.ToString ();
+			string result = m_sb.ToString();
+			m_sb.Clear();
+			return result;
 		}
 
 		private static void PrintInstruction (StringBuilder sb, ParsedInstruction instruction, DisassemblyOptions options)
@@ -169,5 +169,7 @@ namespace SpirV
 				}
 			}
 		}
+
+		private readonly StringBuilder m_sb = new StringBuilder();
 	}
 }
