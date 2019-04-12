@@ -2,18 +2,17 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
 
 namespace SpirV
 {
 	public class Module
 	{
-		public Module (ModuleHeader header, List<ParsedInstruction> instructions)
+		public Module(ModuleHeader header, IReadOnlyList<ParsedInstruction> instructions)
 		{
 			Header = header;
 			Instructions = instructions;
 
-			Read (Instructions, objects_);
+			Read(Instructions, objects_);
 		}
 
 		public static bool IsDebugInstruction(ParsedInstruction instruction)
@@ -21,7 +20,7 @@ namespace SpirV
 			return debugInstructions_.Contains(instruction.Instruction.Name);
 		}
 
-		private static void Read (IReadOnlyList<ParsedInstruction> instructions, Dictionary<uint, ParsedInstruction> objects)
+		private static void Read(IReadOnlyList<ParsedInstruction> instructions, Dictionary<uint, ParsedInstruction> objects)
 		{
 			// Debug instructions can be only processed after everything
 			// else has been parsed, as they may reference types which haven't
@@ -33,14 +32,14 @@ namespace SpirV
 			
 			foreach (var instruction in instructions)
 			{
-				if (IsDebugInstruction (instruction))
+				if (IsDebugInstruction(instruction))
 				{
-					debugInstructions.Add (instruction);
+					debugInstructions.Add(instruction);
 					continue;
 				}
 				if (instruction.Instruction is OpEntryPoint)
 				{
-					entryPoints.Add (instruction);
+					entryPoints.Add(instruction);
 					continue;
 				}
 
@@ -49,8 +48,7 @@ namespace SpirV
 					ProcessTypeInstruction(instruction, objects);
 				}
 
-				instruction.ResolveResultType (objects);
-
+				instruction.ResolveResultType(objects);
 				if (instruction.HasResult)
 				{
 					objects[instruction.ResultId] = instruction;
@@ -66,7 +64,7 @@ namespace SpirV
 							Debug.Assert (t != null);
 							Debug.Assert (t is ScalarType);
 							
-							object constant = ConvertConstant(instruction.ResultType as ScalarType, instruction.Words.Skip(3).ToList());
+							object constant = ConvertConstant(instruction.ResultType as ScalarType, instruction.Words, 3);
 							instruction.Operands[2].Value = constant;
 							instruction.Value = constant;
 						}
@@ -141,23 +139,25 @@ namespace SpirV
 				uint instructionStart = reader.ReadDWord ();
 				ushort wordCount = (ushort)(instructionStart >> 16);
 				int opCode = (int)(instructionStart & 0xFFFF);
-				List<uint> words = new List<uint> () { instructionStart };
-				for (ushort i = 0; i < wordCount - 1; ++i)
+
+				uint[] words = new uint[wordCount];
+				words[0] = instructionStart;
+				for (ushort i = 1; i < wordCount; ++i)
 				{
-					words.Add(reader.ReadDWord());
+					words[i] = reader.ReadDWord();
 				}
 
 				ParsedInstruction instruction = new ParsedInstruction(opCode, words);
 				instructions.Add(instruction);
 			}
 
-			return new Module (header, instructions);
+			return new Module(header, instructions);
 		}
 
 		/// <summary>
 		/// Collect types from OpType* instructions
 		/// </summary>
-		private static void ProcessTypeInstruction(ParsedInstruction i, Dictionary<uint, ParsedInstruction> objects)
+		private static void ProcessTypeInstruction(ParsedInstruction i, IReadOnlyDictionary<uint, ParsedInstruction> objects)
 		{
 			switch (i.Instruction)
 			{
@@ -326,12 +326,14 @@ namespace SpirV
 			}
 		}
 
-		private static object ConvertConstant(ScalarType type, IReadOnlyList<uint> words)
+#warning TODO:
+		private static object ConvertConstant(ScalarType type, IReadOnlyList<uint> words, int index)
 		{
-			byte[] bytes = new byte[words.Count * 4];
-			for (int i = 0; i < words.Count; ++i)
+			int count = words.Count - index;
+			byte[] bytes = new byte[count * 4];
+			for (int i = 0; i < count; ++i)
 			{
-				BitConverter.GetBytes(words[i]).CopyTo(bytes, i * 4);
+				BitConverter.GetBytes(words[index + i]).CopyTo(bytes, i * 4);
 			}
 
 			switch (type)
@@ -358,11 +360,11 @@ namespace SpirV
 						{
 							if (i.Width == 16)
 							{
-								return (ushort)words[0];
+								return (ushort)words[index];
 							}
 							else if (i.Width == 32)
 							{
-								return words[0];
+								return words[index];
 							}
 							else if (i.Width == 64)
 							{

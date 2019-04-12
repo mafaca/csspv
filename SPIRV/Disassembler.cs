@@ -27,10 +27,10 @@ namespace SpirV
 	{
 		public string Disassemble (Module module)
 		{
-			return Disassemble (module, DisassemblyOptions.Default);
+			return Disassemble(module, DisassemblyOptions.Default);
 		}
 
-		public string Disassemble (Module module, DisassemblyOptions options)
+		public string Disassemble(Module module, DisassemblyOptions options)
 		{
 			m_sb.AppendFormat("; SPIR-V\n");
 			m_sb.AppendFormat("; Version: {0}\n", module.Header.Version);
@@ -50,11 +50,11 @@ namespace SpirV
 			m_sb.AppendFormat("; Bound: {0}\n", module.Header.Bound);
 			m_sb.AppendFormat("; Schema: {0}\n", module.Header.Reserved);
 
-			List<string> lines = new List<string> ();
-			foreach (var i in module.Instructions)
+			List<string> lines = new List<string>();
+			foreach (ParsedInstruction instruction in module.Instructions)
 			{
-				PrintInstruction(m_sb, i, options);
-				lines.Add(m_sb.ToString ());
+				PrintInstruction(m_sb, instruction, options);
+				lines.Add(m_sb.ToString());
 				m_sb.Clear();
 			}
 
@@ -76,11 +76,13 @@ namespace SpirV
 					{
 						string[] parts = line.Split('=');
 						System.Diagnostics.Debug.Assert (parts.Length == 2);
-						m_sb.Append(parts[0].PadLeft (longestPrefix));
+						m_sb.Append(parts[0].PadLeft(longestPrefix));
 						m_sb.Append(" = ");
 						m_sb.Append(parts[1]);
-					} else {
-						m_sb.Append("".PadLeft (longestPrefix + 4));
+					}
+					else
+					{
+						m_sb.Append("".PadLeft(longestPrefix + 4));
 						m_sb.Append(line);
 					}
 
@@ -97,17 +99,17 @@ namespace SpirV
 		{
 			if (instruction.Operands.Count == 0)
 			{
-				sb.Append (instruction.Instruction.Name);
+				sb.Append(instruction.Instruction.Name);
 				return;
 			}
 
 			int currentOperand = 0;
 			if (instruction.Instruction.Operands[currentOperand].Type is IdResultType)
 			{
-				if (options.HasFlag (DisassemblyOptions.ShowTypes))
+				if (options.HasFlag(DisassemblyOptions.ShowTypes))
 				{ 
-					sb.Append (instruction.ResultType.ToString ());
-					sb.Append (" ");
+					sb.Append(instruction.ResultType.ToString());
+					sb.Append(' ');
 				}
 
 				++currentOperand;
@@ -115,26 +117,26 @@ namespace SpirV
 
 			if (currentOperand < instruction.Operands.Count && instruction.Instruction.Operands[currentOperand].Type is IdResult)
 			{
-				if (!options.HasFlag (DisassemblyOptions.ShowNames) || string.IsNullOrWhiteSpace (instruction.Name))
+				if (!options.HasFlag(DisassemblyOptions.ShowNames) || string.IsNullOrWhiteSpace(instruction.Name))
 				{
-					PrintOperandValue (sb, instruction.Operands[currentOperand].Value, options);
+					PrintOperandValue(sb, instruction.Operands[currentOperand].Value, options);
 				}
 				else
 				{
-					sb.Append (instruction.Name);
+					sb.Append(instruction.Name);
 				}
-				sb.Append (" = ");
+				sb.Append(" = ");
 
 				++currentOperand;
 			}
 
-			sb.Append (instruction.Instruction.Name);
-			sb.Append (" ");
+			sb.Append(instruction.Instruction.Name);
+			sb.Append(' ');
 
 			for (; currentOperand < instruction.Operands.Count; ++currentOperand)
 			{
-				PrintOperandValue (sb, instruction.Operands[currentOperand].Value, options);
-				sb.Append (" ");
+				PrintOperandValue(sb, instruction.Operands[currentOperand].Value, options);
+				sb.Append(' ');
 			}
 		}
 
@@ -142,60 +144,62 @@ namespace SpirV
 		{
 			if (value is System.Type t)
 			{
-				sb.Append (t.Name);
+				sb.Append(t.Name);
 			}
 			else if (value is string s)
 			{
-				sb.Append ($"\"{s}\"");
+				sb.Append('"');
+				sb.Append(s);
+				sb.Append('"');
 			}
 			else if (value is ObjectReference or)
 			{
-				if (options.HasFlag (DisassemblyOptions.ShowNames) && or.Reference != null && !string.IsNullOrWhiteSpace (or.Reference.Name))
+				if (options.HasFlag(DisassemblyOptions.ShowNames) && or.Reference != null && !string.IsNullOrWhiteSpace(or.Reference.Name))
 				{
-					sb.Append (or.Reference.Name);
+					sb.Append(or.Reference.Name);
 				}
 				else
 				{
-					sb.Append (or);
+					sb.Append(or);
 				}
 			}
 			else if (value is IBitEnumOperandValue beov)
 			{
-				PrintBitEnumValue (sb, beov, options);
+				PrintBitEnumValue(sb, beov, options);
 			}
 			else if (value is IValueEnumOperandValue veov)
 			{
-				PrintValueEnumValue (sb, veov, options);
+				PrintValueEnumValue(sb, veov, options);
 			}
 			else
 			{
-				sb.Append (value);
+				sb.Append(value);
 			}
 		}
 
-		private static void PrintBitEnumValue (StringBuilder sb, IBitEnumOperandValue enumOperandValue, DisassemblyOptions options)
+		private static void PrintBitEnumValue(StringBuilder sb, IBitEnumOperandValue enumOperandValue, DisassemblyOptions options)
 		{
 			foreach (var key in enumOperandValue.Values.Keys)
 			{
-				sb.Append(enumOperandValue.EnumerationType.GetEnumName (key));
-				IList<object> value = enumOperandValue.Values[key];
+				sb.Append(enumOperandValue.EnumerationType.GetEnumName(key));
+				IReadOnlyList<object> value = enumOperandValue.Values[key];
 				if (value.Count != 0)
 				{
-					sb.Append (" ");
-					foreach (var v in value)
+					sb.Append(' ');
+					foreach(var v in value)
 					{
-						PrintOperandValue (sb, v, options);
+						PrintOperandValue(sb, v, options);
 					}
 				}
 			}
 		}
 
-		private static void PrintValueEnumValue (StringBuilder sb, IValueEnumOperandValue valueOperandValue, DisassemblyOptions options)
+		private static void PrintValueEnumValue(StringBuilder sb, IValueEnumOperandValue valueOperandValue, DisassemblyOptions options)
 		{
-			sb.Append (valueOperandValue.Key);
+			sb.Append(valueOperandValue.Key);
 			if (valueOperandValue.Value is IList<object> valueList && valueList.Count > 0)
 			{
-				sb.Append (" ");
+				sb.Append(' ');
 				foreach (var v in valueList)
 				{
 					PrintOperandValue(sb, v, options);

@@ -5,6 +5,10 @@ namespace SpirV
 {
 	public class Type
 	{
+		public virtual StringBuilder ToString(StringBuilder sb)
+		{
+			return sb;
+		}
 	}
 
 	public class VoidType : Type
@@ -13,11 +17,15 @@ namespace SpirV
 		{
 			return "void";
 		}
+
+		public override StringBuilder ToString(StringBuilder sb)
+		{
+			return sb.Append("void");
+		}
 	}
 
 	public class ScalarType : Type
 	{
-
 	}
 
 	public class BoolType : ScalarType
@@ -25,6 +33,11 @@ namespace SpirV
 		public override string ToString()
 		{
 			return "bool";
+		}
+
+		public override StringBuilder ToString(StringBuilder sb)
+		{
+			return sb.Append("bool");
 		}
 	}
 
@@ -48,6 +61,19 @@ namespace SpirV
 			}
 		}
 
+		public override StringBuilder ToString(StringBuilder sb)
+		{
+			if (Signed)
+			{
+				sb.Append('i').Append(Width);
+			}
+			else
+			{
+				sb.Append('u').Append(Width);
+			}
+			return sb;
+		}
+
 		public int Width { get; }
 		public bool Signed { get; }
 	}
@@ -62,6 +88,11 @@ namespace SpirV
 		public override string ToString()
 		{
 			return $"f{Width}";
+		}
+
+		public override StringBuilder ToString(StringBuilder sb)
+		{
+			return sb.Append('f').Append(Width);
 		}
 
 		public int Width { get; }
@@ -80,6 +111,11 @@ namespace SpirV
 			return $"{ComponentType}_{ComponentCount}";
 		}
 
+		public override StringBuilder ToString(StringBuilder sb)
+		{
+			return sb.Append(ComponentType).Append('_').Append(ComponentCount);
+		}
+
 		public ScalarType ComponentType { get; }
 		public int ComponentCount { get; }
 	}
@@ -95,6 +131,11 @@ namespace SpirV
 		public override string ToString ()
 		{
 			return $"{ColumnType}x{ColumnCount}";
+		}
+
+		public override StringBuilder ToString(StringBuilder sb)
+		{
+			return sb.Append(ColumnType).Append('x').Append(ColumnCount);
 		}
 
 		public VectorType ColumnType { get; }
@@ -120,6 +161,12 @@ namespace SpirV
 		public override string ToString ()
 		{
 			StringBuilder sb = new StringBuilder ();
+			ToString(sb);
+			return sb.ToString();
+		}
+
+		public override StringBuilder ToString(StringBuilder sb)
+		{
 			switch (AccessQualifier)
 			{
 				case AccessQualifier.ReadWrite:
@@ -133,7 +180,7 @@ namespace SpirV
 					break;
 			}
 
-			sb.Append ("Texture");
+			sb.Append("Texture");
 			switch (Dim)
 			{
 				case Dim.Dim1D:
@@ -158,8 +205,7 @@ namespace SpirV
 			{
 				sb.Append("Array");
 			}
-
-			return sb.ToString();
+			return sb;
 		}
 
 		public Type SampledType { get; }
@@ -178,6 +224,11 @@ namespace SpirV
 		{
 			return "sampler";
 		}
+
+		public override StringBuilder ToString(StringBuilder sb)
+		{
+			return sb.Append("sampler");
+		}
 	}
 
 	public class SampledImageType : Type
@@ -190,6 +241,11 @@ namespace SpirV
 		public override string ToString()
 		{
 			return $"{ImageType}Sampled";
+		}
+
+		public override StringBuilder ToString(StringBuilder sb)
+		{
+			return ImageType.ToString(sb).Append("Sampled");
 		}
 
 		public ImageType ImageType { get; }
@@ -208,6 +264,11 @@ namespace SpirV
 			return $"{ElementType}[{ElementCount}]";
 		}
 
+		public override StringBuilder ToString(StringBuilder sb)
+		{
+			return ElementType.ToString(sb).Append('[').Append(ElementCount).Append(']');
+		}
+
 		public int ElementCount { get; }
 		public Type ElementType { get; }
 	}
@@ -224,7 +285,7 @@ namespace SpirV
 
 	public class StructType : Type
 	{
-		public StructType (IReadOnlyList<Type> memberTypes)
+		public StructType(IReadOnlyList<Type> memberTypes)
 		{
 			MemberTypes = memberTypes;
 			memberNames_ = new List<string>();
@@ -235,33 +296,39 @@ namespace SpirV
 			}
 		}
 
-		public void SetMemberName (uint member, string name)
+		public void SetMemberName(uint member, string name)
 		{
 			memberNames_[(int)member] = name;
 		}
 
-		public override string ToString ()
+		public override string ToString()
 		{
 			StringBuilder sb = new StringBuilder();
-			sb.Append ("struct {");
+			ToString(sb);
+			return sb.ToString();
+		}
+
+		public override StringBuilder ToString(StringBuilder sb)
+		{
+			sb.Append("struct {");
 			for (int i = 0; i < MemberTypes.Count; ++i)
 			{
 				Type memberType = MemberTypes[i];
-				sb.Append (memberType.ToString());
+				memberType.ToString(sb);
 				if (!string.IsNullOrEmpty(memberNames_[i]))
 				{
-					sb.Append(" ");
+					sb.Append(' ');
 					sb.Append(MemberNames[i]);
 				}
 
-				sb.Append(";");
+				sb.Append(';');
 				if (i < (MemberTypes.Count - 1))
 				{
-					sb.Append(" ");
+					sb.Append(' ');
 				}
 			}
-			sb.Append("}");
-			return sb.ToString();
+			sb.Append('}');
+			return sb;
 		}
 
 		public IReadOnlyList<Type> MemberTypes { get; }
@@ -304,13 +371,24 @@ namespace SpirV
 			}
 		}
 
+		public override StringBuilder ToString(StringBuilder sb)
+		{
+			sb.Append(StorageClass.ToString()).Append(' ');
+			if (Type != null)
+			{
+				Type.ToString(sb);
+			}
+			sb.Append('*');
+			return sb;
+		}
+
 		public StorageClass StorageClass { get; }
 		public Type Type { get; private set; }
 	}
 
 	public class FunctionType : Type
 	{
-		public FunctionType(Type returnType, List<Type> parameterTypes)
+		public FunctionType(Type returnType, IReadOnlyList<Type> parameterTypes)
 		{
 			ReturnType = returnType;
 			ParameterTypes = parameterTypes;
