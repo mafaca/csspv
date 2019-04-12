@@ -8,10 +8,16 @@
     <Product>CSSPV</Product>
     <RepositoryUrl>https://bitbucket.org/Anteru/csspv/src/default/</RepositoryUrl>
     <PackageProjectUrl>https://sh13.net/projects/csspv/</PackageProjectUrl>
+	<AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
     <CheckForOverflowUnderflow>true</CheckForOverflowUnderflow>
+    <OutputPath>..\Bins\$(Configuration)\</OutputPath>
+  </PropertyGroup>
+  
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <OutputPath>..\Bins\$(Configuration)\</OutputPath>
   </PropertyGroup>
 
 </Project>

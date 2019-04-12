@@ -1,0 +1,7 @@
+<Project>
+
+  <PropertyGroup>
+    <BaseIntermediateOutputPath>..\Bins\obj\spirv\</BaseIntermediateOutputPath>
+  </PropertyGroup>
+  
+</Project>

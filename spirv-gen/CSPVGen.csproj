@@ -9,8 +9,17 @@
     <Product>CSSPV</Product>
     <PackageProjectUrl>https://sh13.net/projects/csspv/</PackageProjectUrl>
     <RepositoryUrl>https://bitbucket.org/Anteru/csspv/src/default/</RepositoryUrl>
+	<AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <OutputPath>..\Bins\$(Configuration)\</OutputPath>
+  </PropertyGroup>
+  
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <OutputPath>..\Bins\$(Configuration)\</OutputPath>
+  </PropertyGroup>
+  
   <ItemGroup>
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="2.4.0" />
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="2.4.0" />
