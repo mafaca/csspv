@@ -1,4 +1,3 @@
-﻿using System;
 using System.Collections.Generic;
 using System.Text;
 
@@ -10,7 +9,7 @@ namespace SpirV
 
 	public class VoidType : Type
 	{
-		public override string ToString ()
+		public override string ToString()
 		{
 			return "void";
 		}
@@ -23,7 +22,7 @@ namespace SpirV
 
 	public class BoolType : ScalarType
 	{
-		public override string ToString ()
+		public override string ToString()
 		{
 			return "bool";
 		}
@@ -37,17 +36,20 @@ namespace SpirV
 			Signed = signed;
 		}
 
-		public int Width { get; }
-		public bool Signed { get; }
-
-		public override string ToString ()
+		public override string ToString()
 		{
-			if (Signed) {
+			if (Signed)
+			{
 				return $"i{Width}";
-			} else {
+			}
+			else
+			{
 				return $"u{Width}";
 			}
 		}
+
+		public int Width { get; }
+		public bool Signed { get; }
 	}
 
 	public class FloatingPointType : ScalarType
@@ -57,12 +59,12 @@ namespace SpirV
 			Width = width;
 		}
 
-		public int Width { get; }
-
-		public override string ToString ()
+		public override string ToString()
 		{
 			return $"f{Width}";
 		}
+
+		public int Width { get; }
 	}
 
 	public class VectorType : Type
@@ -73,13 +75,13 @@ namespace SpirV
 			ComponentCount = componentCount;
 		}
 
-		public ScalarType ComponentType { get; }
-		public int ComponentCount { get; }
-
-		public override string ToString ()
+		public override string ToString()
 		{
 			return $"{ComponentType}_{ComponentCount}";
 		}
+
+		public ScalarType ComponentType { get; }
+		public int ComponentCount { get; }
 	}
 
 	public class MatrixType : Type
@@ -90,20 +92,19 @@ namespace SpirV
 			ColumnCount = columnCount;
 		}
 
-		public VectorType ColumnType { get; }
-		public int ColumnCount { get; }
-		public int RowCount { get { return ColumnType.ComponentCount; } }
-
 		public override string ToString ()
 		{
 			return $"{ColumnType}x{ColumnCount}";
 		}
+
+		public VectorType ColumnType { get; }
+		public int ColumnCount { get; }
+		public int RowCount => ColumnType.ComponentCount;
 	}
 
 	public class ImageType : Type
 	{
-		public ImageType (Type sampledType, Dim dim, int depth,
-			bool isArray, bool isMultisampled, int sampleCount,
+		public ImageType (Type sampledType, Dim dim, int depth, bool isArray, bool isMultisampled, int sampleCount,
 			ImageFormat imageFormat, AccessQualifier accessQualifier)
 		{
 			SampledType = sampledType;
@@ -116,6 +117,51 @@ namespace SpirV
 			AccessQualifier = accessQualifier;
 		}
 
+		public override string ToString ()
+		{
+			StringBuilder sb = new StringBuilder ();
+			switch (AccessQualifier)
+			{
+				case AccessQualifier.ReadWrite:
+					sb.Append("read_write ");
+					break;
+				case AccessQualifier.WriteOnly:
+					sb.Append("write_only ");
+					break;
+				case AccessQualifier.ReadOnly:
+					sb.Append("read_only ");
+					break;
+			}
+
+			sb.Append ("Texture");
+			switch (Dim)
+			{
+				case Dim.Dim1D:
+					sb.Append("1D");
+					break;
+				case Dim.Dim2D:
+					sb.Append("2D");
+					break;
+				case Dim.Dim3D:
+					sb.Append("3D");
+					break;
+				case Dim.Cube:
+					sb.Append("Cube");
+					break;
+			}
+
+			if (IsMultisampled)
+			{
+				sb.Append("MS");
+			}
+			if (IsArray)
+			{
+				sb.Append("Array");
+			}
+
+			return sb.ToString();
+		}
+
 		public Type SampledType { get; }
 		public Dim Dim { get; }
 		public int Depth { get; }
@@ -124,42 +170,11 @@ namespace SpirV
 		public int SampleCount { get; }
 		public ImageFormat Format { get; }
 		public AccessQualifier AccessQualifier { get; }
-
-		public override string ToString ()
-		{
-			var sb = new StringBuilder ();
-			switch (AccessQualifier) {
-				case AccessQualifier.ReadWrite:
-					sb.Append ("read_write "); break;
-				case AccessQualifier.WriteOnly:
-					sb.Append ("write_only "); break;
-				case AccessQualifier.ReadOnly:
-					sb.Append ("read_only "); break;
-			}
-
-			sb.Append ("Texture");
-			switch (Dim) {
-				case Dim.Dim1D: sb.Append ("1D"); break;
-				case Dim.Dim2D: sb.Append ("2D"); break;
-				case Dim.Dim3D: sb.Append ("3D"); break;
-				case Dim.Cube: sb.Append ("Cube"); break;
-			}
-
-			if (IsMultisampled) {
-				sb.Append ("MS");
-			}
-
-			if (IsArray) {
-				sb.Append ("Array");
-			}
-
-			return sb.ToString ();
-		}
 	}
 
 	public class SamplerType : Type
 	{
-		public override string ToString ()
+		public override string ToString()
 		{
 			return "sampler";
 		}
@@ -171,13 +186,13 @@ namespace SpirV
 		{
 			ImageType = imageType;
 		}
-		
-		public ImageType ImageType { get; }
 
-		public override string ToString ()
+		public override string ToString()
 		{
 			return $"{ImageType}Sampled";
 		}
+
+		public ImageType ImageType { get; }
 	}
 
 	public class ArrayType : Type
@@ -188,18 +203,18 @@ namespace SpirV
 			ElementCount = elementCount;
 		}
 
-		public int ElementCount { get; }
-		public Type ElementType { get; }
-
-		public override string ToString ()
+		public override string ToString()
 		{
 			return $"{ElementType}[{ElementCount}]";
 		}
+
+		public int ElementCount { get; }
+		public Type ElementType { get; }
 	}
 
 	public class RuntimeArrayType : Type
 	{
-		public RuntimeArrayType (Type elementType)
+		public RuntimeArrayType(Type elementType)
 		{
 			ElementType = elementType;
 		}
@@ -212,46 +227,47 @@ namespace SpirV
 		public StructType (IReadOnlyList<Type> memberTypes)
 		{
 			MemberTypes = memberTypes;
-			memberNames_ = new List<string> ();
+			memberNames_ = new List<string>();
 
-			for (int i = 0; i < memberTypes.Count; ++i) {
-				memberNames_.Add (String.Empty);
+			for (int i = 0; i < memberTypes.Count; ++i)
+			{
+				memberNames_.Add(string.Empty);
 			}
 		}
 
-		private List<string> memberNames_;
-
-		public IReadOnlyList<Type> MemberTypes { get; }
-		public IReadOnlyList<string> MemberNames { get { return memberNames_; } }
-
 		public void SetMemberName (uint member, string name)
 		{
-			memberNames_ [(int)member] = name;
+			memberNames_[(int)member] = name;
 		}
 
 		public override string ToString ()
 		{
-			var sb = new StringBuilder ();
-
+			StringBuilder sb = new StringBuilder();
 			sb.Append ("struct {");
-			for(int i = 0; i <  MemberTypes.Count; ++i) {
-				var memberType = MemberTypes [i];
-				sb.Append (memberType.ToString ());
-
-				if (! string.IsNullOrEmpty (memberNames_ [i])) {
-					sb.Append (" ");
-					sb.Append (MemberNames [i]);
+			for (int i = 0; i < MemberTypes.Count; ++i)
+			{
+				Type memberType = MemberTypes[i];
+				sb.Append (memberType.ToString());
+				if (!string.IsNullOrEmpty(memberNames_[i]))
+				{
+					sb.Append(" ");
+					sb.Append(MemberNames[i]);
 				}
 
-				sb.Append (";");
-				if (i < (MemberTypes.Count - 1)) {
-					sb.Append (" ");
+				sb.Append(";");
+				if (i < (MemberTypes.Count - 1))
+				{
+					sb.Append(" ");
 				}
 			}
-			sb.Append ("}");
-
-			return sb.ToString ();
+			sb.Append("}");
+			return sb.ToString();
 		}
+
+		public IReadOnlyList<Type> MemberTypes { get; }
+		public IReadOnlyList<string> MemberNames => memberNames_;
+
+		private List<string> memberNames_;
 	}
 
 	public class OpaqueType : Type
@@ -260,47 +276,48 @@ namespace SpirV
 
 	public class PointerType : Type
 	{
-		public StorageClass StorageClass { get; }
-		public Type Type { get; private set; }
-
-		public PointerType (StorageClass storageClass, Type type)
+		public PointerType(StorageClass storageClass, Type type)
 		{
 			StorageClass = storageClass;
 			Type = type;
 		}
 
-		public PointerType (StorageClass storageClass)
+		public PointerType(StorageClass storageClass)
 		{
 			StorageClass = storageClass;
 		}
 
-		public void ResolveForwardReference (Type t)
+		public void ResolveForwardReference(Type t)
 		{
 			Type = t;
 		}
 
-		public override string ToString ()
+		public override string ToString()
 		{
-			if (Type == null) {
+			if (Type == null)
+			{
 				return $"{StorageClass} *";
-			} else {
+			}
+			else
+			{
 				return $"{StorageClass} {Type}*";
 			}
 		}
+
+		public StorageClass StorageClass { get; }
+		public Type Type { get; private set; }
 	}
 
 	public class FunctionType : Type
 	{
-		public Type ReturnType { get; }
-		public IReadOnlyList<Type> ParameterTypes { get { return parameterTypes_; } }
-
-		private readonly List<Type> parameterTypes_ = new List<Type> ();
-
-		public FunctionType (Type returnType, List<Type> parameterTypes)
+		public FunctionType(Type returnType, List<Type> parameterTypes)
 		{
 			ReturnType = returnType;
-			parameterTypes_ = parameterTypes;
+			ParameterTypes = parameterTypes;
 		}
+
+		public Type ReturnType { get; }
+		public IReadOnlyList<Type> ParameterTypes { get; }
 	}
 
 	public class EventType : Type

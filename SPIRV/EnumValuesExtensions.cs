@@ -10,7 +10,8 @@ namespace SpirV
 		public static Array GetEnumValues(this System.Type _this)
 		{
 			TypeInfo typeInfo = _this.GetTypeInfo ();
-			if (!typeInfo.IsEnum) {
+			if (!typeInfo.IsEnum)
+			{
 				throw new ArgumentException ("GetEnumValues: Type '" + _this.Name + "' is not an enum");
 			}
 
@@ -19,14 +20,14 @@ namespace SpirV
 				  from field in typeInfo.DeclaredFields
 				  where field.IsLiteral
 				  select field.GetValue (null)
-				)
-				.ToArray();
+				).ToArray();
 		}
 
 		public static string GetEnumName(this System.Type _this, object value)
 		{
 			TypeInfo typeInfo = _this.GetTypeInfo ();
-			if (!typeInfo.IsEnum) {
+			if (!typeInfo.IsEnum)
+			{
 				throw new ArgumentException ("GetEnumName: Type '" + _this.Name + "' is not an enum");
 			}
 			return
@@ -34,8 +35,7 @@ namespace SpirV
 				  from field in typeInfo.DeclaredFields
 				  where field.IsLiteral && (uint)field.GetValue(null) == (uint)value
 				  select field.Name
-				)
-				.First();
+				).First();
 		}
 	}
 }
