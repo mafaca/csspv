@@ -38,40 +38,58 @@ namespace SpirV
 
 	public class LiteralString : Literal
 	{
-#warning TODO:
 		public override bool ReadValue(IReadOnlyList<uint> words, int index, out object value, out int wordsUsed)
 		{
 			// This is just a fail-safe -- the loop below must terminate
 			wordsUsed = 1;
-
-			List<byte> bytes = new List<byte>();
+			int bytesUsed = 0;
+			byte[] bytes = new byte[(words.Count - index) * 4];
 			for (int i = index; i < words.Count; ++i)
 			{
-				byte[] wordBytes = BitConverter.GetBytes(words[i]);
-				int zeroOffset = -1;
-				for (int j = 0; j < wordBytes.Length; ++j)
+				uint word = words[i];
+				byte b0 = (byte)(word & 0xFF);
+				if (b0 == 0)
 				{
-					if (wordBytes[j] == 0)
-					{
-						zeroOffset = j;
-						break;
-					}
-					else
-					{
-						bytes.Add(wordBytes[j]);
-					}
-				}
-
-				if (zeroOffset != -1)
-				{
-					wordsUsed = i + 1;
 					break;
 				}
+				else
+				{
+					bytes[bytesUsed++] = b0;
+				}
+
+				byte b1 = (byte)((word >> 8) & 0xFF);
+				if (b1 == 0)
+				{
+					break;
+				}
+				else
+				{
+					bytes[bytesUsed++] = b1;
+				}
+
+				byte b2 = (byte)((word >> 16) & 0xFF);
+				if (b2 == 0)
+				{
+					break;
+				}
+				else
+				{
+					bytes[bytesUsed++] = b2;
+				}
+
+				byte b3 = (byte)(word >> 24);
+				if (b3 == 0)
+				{
+					break;
+				}
+				else
+				{
+					bytes[bytesUsed++] = b3;
+				}
+				wordsUsed++;
 			}
 
-			UTF8Encoding decoder = new UTF8Encoding();
-			byte[] byteArray = bytes.ToArray();
-			value = Encoding.UTF8.GetString(byteArray, 0, byteArray.Length);
+			value = Encoding.UTF8.GetString(bytes, 0, bytesUsed);
 			return true;
 		}
 	}
@@ -126,7 +144,6 @@ namespace SpirV
 	{
 	};
 
-#warning TODO:
 	public class EnumType<T, U> : OperandType
 		where T : Enum
 		where U : ParameterFactory, new ()
@@ -137,39 +154,48 @@ namespace SpirV
 			if (typeof(T).GetTypeInfo().GetCustomAttributes<FlagsAttribute>().Any())
 			{
 				Dictionary<uint, IReadOnlyList<object>> result = new Dictionary<uint, IReadOnlyList<object>>();
-				foreach (var enumValue in EnumerationType.GetEnumValues())
+				foreach (object enumValue in EnumerationType.GetEnumValues())
 				{
 					uint bit = (uint)enumValue;
-					// bit == 0 and words [0] == 0 handles the 0x0 = None cases
+					// bit == 0 and words[0] == 0 handles the 0x0 = None cases
 					if ((words[index] & bit) != 0 || (bit == 0 && words[index] == 0))
 					{
 						Parameter p = parameterFactory_.CreateParameter(bit);
-						List<object> resultItems = new List<object>();
-						if (p != null)
+						if (p == null)
 						{
+							result.Add(bit, new object[0]);
+						}
+						else
+						{
+							object[] resultItems = new object[p.OperandTypes.Count];
 							for (int j = 0; j < p.OperandTypes.Count; ++j)
 							{
 								p.OperandTypes[j].ReadValue(words, 1 + wordsUsedForParameters, out object pValue, out int pWordsUsed);
 								wordsUsedForParameters += pWordsUsed;
-								resultItems.Add (pValue);
+								resultItems[j] = pValue;
 							}
+							result.Add(bit, resultItems);
 						}
-						result[bit] = resultItems;
 					}
 				}
 				value = new BitEnumOperandValue<T>(result);
 			}
 			else
 			{
-				List<object> resultItems = new List<object>();
+				object[] resultItems;
 				Parameter p = parameterFactory_.CreateParameter(words[index]);
-				if (p != null)
+				if (p == null)
 				{
+					resultItems = new object[0];
+				}
+				else
+				{
+					resultItems = new object[p.OperandTypes.Count];
 					for (int j = 0; j < p.OperandTypes.Count; ++j)
 					{
 						p.OperandTypes[j].ReadValue(words, 1 + wordsUsedForParameters, out object pValue, out int pWordsUsed);
 						wordsUsedForParameters += pWordsUsed;
-						resultItems.Add(pValue);
+						resultItems[j] = pValue;
 					}
 				}
 				value = new ValueEnumOperandValue<T>((T)(object)words[index], resultItems);

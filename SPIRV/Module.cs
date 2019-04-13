@@ -2,11 +2,30 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Runtime.InteropServices;
 
 namespace SpirV
 {
 	public class Module
 	{
+		[StructLayout(LayoutKind.Explicit)]
+		private struct FloatUIntUnion
+		{
+			[FieldOffset(0)]
+			public uint Int;
+			[FieldOffset(0)]
+			public float Float;
+		}
+
+		[StructLayout(LayoutKind.Explicit)]
+		private struct DoubleULongUnion
+		{
+			[FieldOffset(0)]
+			public ulong Long;
+			[FieldOffset(0)]
+			public double Double;
+		}
+
 		public Module(ModuleHeader header, IReadOnlyList<ParsedInstruction> instructions)
 		{
 			Header = header;
@@ -326,16 +345,8 @@ namespace SpirV
 			}
 		}
 
-#warning TODO:
 		private static object ConvertConstant(ScalarType type, IReadOnlyList<uint> words, int index)
 		{
-			int count = words.Count - index;
-			byte[] bytes = new byte[count * 4];
-			for (int i = 0; i < count; ++i)
-			{
-				BitConverter.GetBytes(words[index + i]).CopyTo(bytes, i * 4);
-			}
-
 			switch (type)
 			{
 				case IntegerType i:
@@ -344,23 +355,22 @@ namespace SpirV
 						{
 							if (i.Width == 16)
 							{
-								///TODO ToInt16?
-								return (short)BitConverter.ToInt32(bytes, 0);
+								return unchecked((short)(words[index]));
 							}
 							else if (i.Width == 32)
 							{
-								return BitConverter.ToInt32 (bytes, 0);
+								return unchecked((int)(words[index]));
 							}
 							else if (i.Width == 64)
 							{
-								return BitConverter.ToInt64 (bytes, 0);
+								return unchecked((long)(words[index] | (ulong)(words[index + 1]) << 32));
 							}
 						}
 						else
 						{
 							if (i.Width == 16)
 							{
-								return (ushort)words[index];
+								return unchecked((ushort)(words[index]));
 							}
 							else if (i.Width == 32)
 							{
@@ -368,7 +378,7 @@ namespace SpirV
 							}
 							else if (i.Width == 64)
 							{
-								return BitConverter.ToUInt64 (bytes, 0);
+								return words[index] | (ulong)(words[index + 1]) << 32;
 							}
 						}
 
@@ -379,15 +389,15 @@ namespace SpirV
 					{
 						if (f.Width == 32)
 						{
-							return BitConverter.ToSingle (bytes, 0);
+							return new FloatUIntUnion { Int = words[0] }.Float;
 						}
 						else if (f.Width == 64)
 						{
-							return BitConverter.ToDouble (bytes, 0);
+							return new DoubleULongUnion { Long = (words[index] | (ulong)(words[index + 1]) << 32) }.Double;
 						}
 						else
 						{
-							throw new Exception ("Cannot construct floating point literal.");
+							throw new Exception("Cannot construct floating point literal.");
 						}
 					}
 			}
