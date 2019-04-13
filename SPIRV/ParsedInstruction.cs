@@ -62,7 +62,7 @@ namespace SpirV
 
 	public class VaryingOperandValue
 	{
-		public VaryingOperandValue (IReadOnlyList<object> values)
+		public VaryingOperandValue(IReadOnlyList<object> values)
 		{
 			Values = values;
 		}
@@ -78,7 +78,14 @@ namespace SpirV
 		{
 			for (int i = 0; i < Values.Count; ++i)
 			{
-				sb.Append(Values[i]);
+				if (Values[i] is ObjectReference objRef)
+				{
+					objRef.ToString(sb);
+				}
+				else
+				{
+					sb.Append(Values[i]);
+				}
 				if (i < (Values.Count - 1))
 				{
 					sb.Append(' ');
@@ -254,6 +261,5 @@ namespace SpirV
 		public IList<ParsedOperand> Operands { get; } = new List<ParsedOperand>();
 		public string Name { get; set; }
 		public object Value { get; set; }
-
 	}
 }

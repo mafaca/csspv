@@ -1,5 +1,6 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
+using System.IO;
 using CommandLine;
 
 namespace SpirV
@@ -20,21 +21,25 @@ namespace SpirV
 	{
 		static int Run (Options options)
 		{
-			var module = Module.ReadFrom (System.IO.File.OpenRead (options.InputFile));
-			var ds = new Disassembler ();
-
-			var settings = DisassemblyOptions.None;
-
-			if (options.ShowNames) {
-				settings |= DisassemblyOptions.ShowNames;
+			Module module;
+			using (FileStream fs = File.OpenRead(options.InputFile))
+			{
+				module = Module.ReadFrom(fs);
 			}
 
-			if (options.ShowTypes) {
+			Disassembler ds = new Disassembler();
+			DisassemblyOptions settings = DisassemblyOptions.None;
+			if (options.ShowNames)
+			{
+				settings |= DisassemblyOptions.ShowNames;
+			}
+			if (options.ShowTypes)
+			{
 				settings |= DisassemblyOptions.ShowTypes;
 			}
 
-			Console.Write (ds.Disassemble (module, settings));
-
+			string listing = ds.Disassemble(module, settings);
+			Console.Write (listing);
 			return 0;
 		}
 

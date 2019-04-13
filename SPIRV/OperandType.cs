@@ -71,7 +71,7 @@ namespace SpirV
 
 			UTF8Encoding decoder = new UTF8Encoding();
 			byte[] byteArray = bytes.ToArray();
-			value = decoder.GetString(byteArray, 0, byteArray.Length);
+			value = Encoding.UTF8.GetString(byteArray, 0, byteArray.Length);
 			return true;
 		}
 	}

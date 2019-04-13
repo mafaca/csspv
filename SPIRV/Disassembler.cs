@@ -32,62 +32,63 @@ namespace SpirV
 
 		public string Disassemble(Module module, DisassemblyOptions options)
 		{
-			m_sb.AppendFormat("; SPIR-V\n");
-			m_sb.AppendFormat("; Version: {0}\n", module.Header.Version);
+			m_sb.AppendLine("; SPIR-V");
+			m_sb.Append("; Version: ").Append(module.Header.Version).AppendLine();
 			if (module.Header.GeneratorName == null)
 			{
-				m_sb.AppendFormat("; Generator: {0}; {1}\n",
-					module.Header.GeneratorName,
-					module.Header.GeneratorVersion);
+				m_sb.Append("; Generator: unknown; ").Append(module.Header.GeneratorVersion).AppendLine();
 			}
 			else
 			{
-				m_sb.AppendFormat("; Generator: {0} {1}; {2}\n",
-					module.Header.GeneratorVendor,
-					module.Header.GeneratorName,
-					module.Header.GeneratorVersion);
+				m_sb.Append("; Generator: ").Append(module.Header.GeneratorVendor).Append(' ').
+					Append(module.Header.GeneratorName).Append("; ").Append(module.Header.GeneratorVersion).AppendLine();
 			}
-			m_sb.AppendFormat("; Bound: {0}\n", module.Header.Bound);
-			m_sb.AppendFormat("; Schema: {0}\n", module.Header.Reserved);
+			m_sb.Append("; Bound: ").Append(module.Header.Bound).AppendLine();
+			m_sb.Append("; Schema: ").Append(module.Header.Reserved).AppendLine();
 
-			List<string> lines = new List<string>();
-			foreach (ParsedInstruction instruction in module.Instructions)
+			string[] lines = new string[module.Instructions.Count + 1];
+			lines[0] = m_sb.ToString();
+			m_sb.Clear();
+
+			for (int i = 0; i < module.Instructions.Count; i++)
 			{
+				ParsedInstruction instruction = module.Instructions[i];
 				PrintInstruction(m_sb, instruction, options);
-				lines.Add(m_sb.ToString());
+				lines[i + 1] = m_sb.ToString();
 				m_sb.Clear();
 			}
 
 			int longestPrefix = 0;
-			foreach (var line in lines)
+			for (int i = 0; i < lines.Length; i++)
 			{
+				string line = lines[i];
 				longestPrefix = Math.Max(longestPrefix, line.IndexOf('='));
+				if (longestPrefix > 50)
+				{
+					longestPrefix = 50;
+					break;
+				}
 			}
 
-			foreach (var line in lines)
+			m_sb.Append(lines[0]);
+			for (int i = 1; i < lines.Length; i++)
 			{
-				if (line.StartsWith(";"))
+				string line = lines[i];
+				int index = line.IndexOf('=');
+				if (index == -1)
 				{
-					m_sb.AppendLine(line);
+					m_sb.Append(' ', longestPrefix + 4);
+					m_sb.Append(line);
 				}
 				else
 				{
-					if (line.Contains("="))
-					{
-						string[] parts = line.Split('=');
-						System.Diagnostics.Debug.Assert (parts.Length == 2);
-						m_sb.Append(parts[0].PadLeft(longestPrefix));
-						m_sb.Append(" = ");
-						m_sb.Append(parts[1]);
-					}
-					else
-					{
-						m_sb.Append("".PadLeft(longestPrefix + 4));
-						m_sb.Append(line);
-					}
-
-					m_sb.AppendLine();
+					int pad = Math.Max(0, longestPrefix - index);
+					m_sb.Append(' ', pad);
+					m_sb.Append(line, 0, index);
+					m_sb.Append('=');
+					m_sb.Append(line, index + 1, line.Length - index - 1);
 				}
+				m_sb.AppendLine();
 			}
 
 			string result = m_sb.ToString();
@@ -107,11 +108,9 @@ namespace SpirV
 			if (instruction.Instruction.Operands[currentOperand].Type is IdResultType)
 			{
 				if (options.HasFlag(DisassemblyOptions.ShowTypes))
-				{ 
-					sb.Append(instruction.ResultType.ToString());
-					sb.Append(' ');
+				{
+					instruction.ResultType.ToString(sb).Append(' ');
 				}
-
 				++currentOperand;
 			}
 
@@ -140,53 +139,63 @@ namespace SpirV
 			}
 		}
 
-		private static void PrintOperandValue (StringBuilder sb, object value, DisassemblyOptions options)
+		private static void PrintOperandValue(StringBuilder sb, object value, DisassemblyOptions options)
 		{
-			if (value is System.Type t)
+			switch (value)
 			{
-				sb.Append(t.Name);
-			}
-			else if (value is string s)
-			{
-				sb.Append('"');
-				sb.Append(s);
-				sb.Append('"');
-			}
-			else if (value is ObjectReference or)
-			{
-				if (options.HasFlag(DisassemblyOptions.ShowNames) && or.Reference != null && !string.IsNullOrWhiteSpace(or.Reference.Name))
-				{
-					sb.Append(or.Reference.Name);
-				}
-				else
-				{
-					sb.Append(or);
-				}
-			}
-			else if (value is IBitEnumOperandValue beov)
-			{
-				PrintBitEnumValue(sb, beov, options);
-			}
-			else if (value is IValueEnumOperandValue veov)
-			{
-				PrintValueEnumValue(sb, veov, options);
-			}
-			else
-			{
-				sb.Append(value);
+				case System.Type t:
+					sb.Append(t.Name);
+					break;
+
+				case string s:
+					{
+						sb.Append('"');
+						sb.Append(s);
+						sb.Append('"');
+					}
+					break;
+
+				case ObjectReference or:
+					{
+						if (options.HasFlag(DisassemblyOptions.ShowNames) && or.Reference != null && !string.IsNullOrWhiteSpace(or.Reference.Name))
+						{
+							sb.Append(or.Reference.Name);
+						}
+						else
+						{
+							or.ToString(sb);
+						}
+					}
+					break;
+
+				case IBitEnumOperandValue beov:
+					PrintBitEnumValue(sb, beov, options);
+					break;
+
+				case IValueEnumOperandValue veov:
+					PrintValueEnumValue(sb, veov, options);
+					break;
+
+				case VaryingOperandValue varOpVal:
+					varOpVal.ToString(sb);
+					break;
+
+				default:
+					sb.Append(value);
+					break;
 			}
 		}
 
 		private static void PrintBitEnumValue(StringBuilder sb, IBitEnumOperandValue enumOperandValue, DisassemblyOptions options)
 		{
-			foreach (var key in enumOperandValue.Values.Keys)
+			foreach (uint key in enumOperandValue.Values.Keys)
 			{
 				sb.Append(enumOperandValue.EnumerationType.GetEnumName(key));
 				IReadOnlyList<object> value = enumOperandValue.Values[key];
 				if (value.Count != 0)
 				{
 					sb.Append(' ');
-					foreach(var v in value)
+					foreach (object v in value)
 					{
 						PrintOperandValue(sb, v, options);
 					}
@@ -200,7 +209,7 @@ namespace SpirV
 			if (valueOperandValue.Value is IList<object> valueList && valueList.Count > 0)
 			{
 				sb.Append(' ');
-				foreach (var v in valueList)
+				foreach (object v in valueList)
 				{
 					PrintOperandValue(sb, v, options);
 				}

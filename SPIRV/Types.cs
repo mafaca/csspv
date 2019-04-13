@@ -113,7 +113,7 @@ namespace SpirV
 
 		public override StringBuilder ToString(StringBuilder sb)
 		{
-			return sb.Append(ComponentType).Append('_').Append(ComponentCount);
+			return ComponentType.ToString(sb).Append('_').Append(ComponentCount);
 		}
 
 		public ScalarType ComponentType { get; }
